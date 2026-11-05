@@ -20,10 +20,13 @@ The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" 
 
 `modifier` is the key held while pressing a letter: `right_option` (the default), `left_option`, `right_command`, `left_command`, `right_control` or `left_control`. Only that exact modifier counts, so holding any other modifier alongside it leaves the keystroke alone.
 
+`show_no_apps_message: true` flashes a message in the middle of the screen with your focused window when nothing answers to a key. It's off by default.
+
 Every running app answers to the first letter of its name. An entry under `apps`, keyed by bundle ID, changes that per app:
 
 ```yaml
 modifier: right_option
+show_no_apps_message: true
 
 apps:
   com.mitchellh.ghostty:
