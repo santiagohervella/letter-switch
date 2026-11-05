@@ -1,13 +1,13 @@
 {
-  "originHash" : "aa45423c5690e364f6fdab208ec9778dcf9a46923aca12a113c3f1d8818216ea",
+  "originHash" : "3d59fc077251e30cf3fbcee6cd543bdd8ce3a2be2243743d2635dc44bb710799",
   "pins" : [
     {
-      "identity" : "tomlkit",
+      "identity" : "yams",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LebJe/TOMLKit",
+      "location" : "https://github.com/jpsim/Yams",
       "state" : {
-        "revision" : "ec6198d37d495efc6acd4dffbd262cdca7ff9b3f",
-        "version" : "0.6.0"
+        "revision" : "a27b21e0c81c5bf42049b897a62aaf387e80f279",
+        "version" : "6.2.2"
       }
     }
   ],

@@ -1,9 +1,9 @@
 import Foundation
-import TOMLKit
+import Yams
 
 struct Config: Decodable {
     static let directory = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/letter-switch")
-    static let file = directory.appending(path: "config.toml")
+    static let file = directory.appending(path: "config.yaml")
 
     let modifier: Modifier
     let apps: [String: AppSettings]
@@ -25,12 +25,22 @@ struct Config: Decodable {
             log.info("no config at \(file.path, privacy: .public), using defaults")
             return Config()
         }
+        guard !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return Config()
+        }
         do {
-            return try TOMLDecoder().decode(Config.self, from: contents)
+            return try YAMLDecoder().decode(Config.self, from: contents)
         } catch {
-            log.error("invalid config, keeping previous: \(String(describing: error), privacy: .public)")
+            log.error("invalid config, keeping previous: \(describe(error), privacy: .public)")
             return nil
         }
+    }
+
+    private static func describe(_ error: Error) -> String {
+        if case DecodingError.dataCorrupted(let context) = error, let configError = context.underlyingError as? ConfigError {
+            return configError.description
+        }
+        return String(describing: error)
     }
 
     private enum CodingKeys: String, CodingKey, CaseIterable {
