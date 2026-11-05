@@ -9,6 +9,7 @@ final class Switcher {
 
     private let tracker: AppTracker
     private let focuser = Focuser()
+    private let launcher = Launcher()
     private var assignments = KeyAssignments()
     private var cycle: Cycle?
 
@@ -28,7 +29,7 @@ final class Switcher {
             .filter { !$0.isTerminated }
 
         guard !apps.isEmpty else {
-            log.debug("no apps for \(String(key), privacy: .public)")
+            launchPinnedApp(key)
             return
         }
 
@@ -39,6 +40,15 @@ final class Switcher {
         cycle = Cycle(key: key, apps: apps, target: target)
         tracker.moveToFront(target)
         focuser.focus(target)
+    }
+
+    private func launchPinnedApp(_ key: Character) {
+        guard let bundleID = assignments.pinnedBundleID(for: key) else {
+            log.debug("no apps for \(String(key), privacy: .public)")
+            return
+        }
+        cycle = nil
+        launcher.launch(bundleID)
     }
 
     private func continuedCycle(_ key: Character, _ current: NSRunningApplication?) -> Cycle? {
