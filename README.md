@@ -8,6 +8,7 @@ make run         # build, sign and launch from build/, replacing the installed c
 make stop        # stop whichever copy is running
 make uninstall   # remove the app and its launch agent
 make logs        # stream the app's logs
+make test        # run the unit tests
 make icon        # redraw AppIcon.icns from scripts/make-icon.swift
 ```
 

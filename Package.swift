@@ -15,5 +15,11 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v5)],
             linkerSettings: [.unsafeFlags(["-F/System/Library/PrivateFrameworks", "-framework", "SkyLight"])]
         ),
+        .testTarget(
+            name: "LetterSwitchTests",
+            dependencies: ["LetterSwitch", "Yams"],
+            path: "Tests/LetterSwitchTests",
+            linkerSettings: [.unsafeFlags(["-F/System/Library/PrivateFrameworks", "-framework", "SkyLight"])]
+        ),
     ]
 )

@@ -1,12 +1,6 @@
 import AppKit
 
 final class Switcher {
-    private struct Cycle {
-        let key: Character
-        let apps: [NSRunningApplication]
-        let target: NSRunningApplication
-    }
-
     private let tracker: AppTracker
     private let focuser = Focuser()
     private let launcher = Launcher()
@@ -14,7 +8,7 @@ final class Switcher {
     private var assignments = KeyAssignments()
     private var showNoAppsMessage = false
     private var hideOtherApps = false
-    private var cycle: Cycle?
+    private var cycle: Cycle<NSRunningApplication>?
 
     init(tracker: AppTracker) {
         self.tracker = tracker
@@ -29,20 +23,14 @@ final class Switcher {
     }
 
     func switchTo(_ key: Character) {
-        let current = tracker.recent.first
-        let apps = (continuedCycle(key, current)?.apps ?? tracker.recent.filter { assignments.keys(for: $0).contains(key) })
-            .filter { !$0.isTerminated }
-
-        guard !apps.isEmpty else {
+        guard let next = Cycle.next(key: key, recent: tracker.recent, previous: cycle, assignments: assignments) else {
             launchApp(key)
             return
         }
 
-        let currentIndex = apps.firstIndex { $0.processIdentifier == current?.processIdentifier } ?? -1
-        let target = apps[(currentIndex + 1) % apps.count]
-
+        let target = next.target
         log.debug("\(String(key), privacy: .public) -> \(target.localizedName ?? "?", privacy: .public)")
-        cycle = Cycle(key: key, apps: apps, target: target)
+        cycle = next
         tracker.moveToFront(target)
         focuser.focus(target)
         hideApps(except: target)
@@ -65,10 +53,5 @@ final class Switcher {
         tracker.recent
             .filter { $0.processIdentifier != target.processIdentifier && !$0.isHidden }
             .forEach { $0.hide() }
-    }
-
-    private func continuedCycle(_ key: Character, _ current: NSRunningApplication?) -> Cycle? {
-        guard let cycle, cycle.key == key, cycle.target.processIdentifier == current?.processIdentifier else { return nil }
-        return cycle
     }
 }

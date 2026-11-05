@@ -30,7 +30,7 @@ struct KeyAssignments {
         }
     }
 
-    func keys(for app: NSRunningApplication) -> Set<Character> {
+    func keys(for app: some SwitchableApp) -> Set<Character> {
         if let bundleID = app.bundleIdentifier, let keys = keysByBundleID[bundleID] {
             return keys
         }

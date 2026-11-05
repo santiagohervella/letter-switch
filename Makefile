@@ -9,7 +9,7 @@ INSTALL_DIR := $(HOME)/Applications
 AGENT := $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
 GUI_DOMAIN := gui/$(shell id -u)
 
-.PHONY: app run install uninstall stop identity icon logs clean
+.PHONY: app run install uninstall stop identity icon test logs clean
 
 app: identity
 	swift build -c release
@@ -51,6 +51,9 @@ install: app stop
 uninstall: stop
 	rm -f $(AGENT)
 	rm -rf "$(INSTALL_DIR)/LetterSwitch.app"
+
+test:
+	swift test
 
 logs:
 	log stream --level debug --predicate 'subsystem == "$(BUNDLE_ID)"'

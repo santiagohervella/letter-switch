@@ -31,18 +31,22 @@ struct Config: Decodable {
             log.info("no config at \(file.path, privacy: .public), using defaults")
             return Config()
         }
-        guard !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return Config()
-        }
         do {
-            return try YAMLDecoder().decode(Config.self, from: contents)
+            return try parse(contents)
         } catch {
             log.error("invalid config, keeping previous: \(describe(error), privacy: .public)")
             return nil
         }
     }
 
-    private static func describe(_ error: Error) -> String {
+    static func parse(_ contents: String) throws -> Config {
+        guard !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return Config()
+        }
+        return try YAMLDecoder().decode(Config.self, from: contents)
+    }
+
+    static func describe(_ error: Error) -> String {
         if case DecodingError.dataCorrupted(let context) = error, let configError = context.underlyingError as? ConfigError {
             return configError.description
         }
