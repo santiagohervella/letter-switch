@@ -1,5 +1,10 @@
 import AppKit
 
+guard LoginItem.isRunningAsAgent else {
+    LoginItem.install()
+    exit(0)
+}
+
 let tracker = AppTracker()
 let switcher = Switcher(tracker: tracker)
 let keyTap = KeyTap { switcher.switchTo($0) }

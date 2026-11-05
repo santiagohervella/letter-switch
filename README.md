@@ -3,35 +3,30 @@
 A keyboard-only macOS app switcher. Hold right option and press a letter to switch to the most recently used running app whose name starts with that letter. Press the letter again to cycle through the rest.
 
 ```sh
-make install     # build, sign, copy into ~/Applications and start at login
-make run         # build, sign and launch from build/, replacing the installed copy until the next install
-make stop        # stop whichever copy is running
+brew install santiagohervella/tap/letter-switch
+```
+
+The app sets itself up to start at login the first time it opens. Grant it Accessibility when macOS asks.
+
+## How it starts
+
+Opening LetterSwitch.app writes a launch agent to `~/Library/LaunchAgents/com.santiagohervella.letter-switch.plist`, loads it and quits. launchd then runs the app in the background, starts it at every login and restarts it if it crashes. Opening the app again rewrites the agent and restarts it, which is how updates take effect.
+
+## Development
+
+```sh
+make install     # build, sign, copy into /Applications and start it
+make stop        # stop the running copy
 make uninstall   # remove the app and its launch agent
 make logs        # stream the app's logs
 make test        # run the unit tests
-make release VERSION=x.y  # test, build, sign and publish a GitHub release
+make release VERSION=x.y  # test, build, sign, publish a GitHub release and update the Homebrew cask
 make icon        # redraw AppIcon.icns from scripts/make-icon.swift
 ```
 
-The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" certificate. `scripts/signing-identity.sh` creates it in the login keychain on the first build. The signature has to stay the same across builds so that the Accessibility permission survives rebuilds.
+The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" certificate. `scripts/signing-identity.sh` creates it in the login keychain on the first build. Local builds and releases share that signature, so the Accessibility permission survives rebuilds and updates. Back up the certificate by exporting "LetterSwitch Dev" from Keychain Access as a `.p12`. A new certificate means granting Accessibility again on every Mac.
 
-`make install` loads a launch agent at `~/Library/LaunchAgents/com.santiagohervella.letter-switch.plist`. launchd starts the app at login and restarts it if it crashes.
-
-## Releases
-
-`make release VERSION=x.y` publishes `LetterSwitch.zip` and `LaunchAgent.plist` as a GitHub release, signed with the same certificate as local builds. Every release keeps that signature, so a Mac keeps its Accessibility permission across updates. Back up the certificate by exporting "LetterSwitch Dev" from Keychain Access as a `.p12`. A new certificate means granting Accessibility again on every Mac.
-
-To install the latest release without building:
-
-```sh
-curl -fsSL -o /tmp/LetterSwitch.zip https://github.com/santiagohervella/letter-switch/releases/latest/download/LetterSwitch.zip
-ditto -x -k /tmp/LetterSwitch.zip ~/Applications
-curl -fsSL https://github.com/santiagohervella/letter-switch/releases/latest/download/LaunchAgent.plist \
-  | sed "s|__INSTALL_DIR__|$HOME/Applications|" > ~/Library/LaunchAgents/com.santiagohervella.letter-switch.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.santiagohervella.letter-switch.plist
-```
-
-Downloads through `curl` aren't quarantined, so Gatekeeper lets the self-signed app run. A copy downloaded through a browser needs `xattr -dr com.apple.quarantine LetterSwitch.app` first.
+The app is self-signed rather than notarized, so the Homebrew cask clears the quarantine flag after installing. A copy downloaded through a browser needs `xattr -dr com.apple.quarantine LetterSwitch.app` before it opens.
 
 ## Config
 

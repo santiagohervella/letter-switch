@@ -5,11 +5,10 @@ APP := build/LetterSwitch.app
 VERSION ?= dev
 IDENTITY := LetterSwitch Dev
 BUNDLE_ID := com.santiagohervella.letter-switch
-INSTALL_DIR := $(HOME)/Applications
-AGENT := $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
+INSTALL_DIR := /Applications
 GUI_DOMAIN := gui/$(shell id -u)
 
-.PHONY: app run install uninstall stop identity icon test release logs clean
+.PHONY: app install uninstall stop identity icon test release logs clean
 
 app: identity
 	swift build -c release
@@ -34,22 +33,17 @@ identity:
 	@security find-certificate -c "$(IDENTITY)" >/dev/null 2>&1 || scripts/signing-identity.sh
 
 stop:
-	@launchctl bootout $(GUI_DOMAIN) $(AGENT) 2>/dev/null || true
+	@launchctl bootout $(GUI_DOMAIN)/$(BUNDLE_ID) 2>/dev/null || true
 	@pkill -x LetterSwitch || true
 	@while pgrep -x LetterSwitch >/dev/null; do sleep 0.1; done
 
-run: app stop
-	open $(APP)
-
 install: app stop
-	mkdir -p "$(INSTALL_DIR)" "$(dir $(AGENT))"
 	rm -rf "$(INSTALL_DIR)/LetterSwitch.app"
 	cp -R $(APP) "$(INSTALL_DIR)/"
-	sed 's|__INSTALL_DIR__|$(INSTALL_DIR)|' LaunchAgent.plist > $(AGENT)
-	launchctl bootstrap $(GUI_DOMAIN) $(AGENT)
+	open "$(INSTALL_DIR)/LetterSwitch.app"
 
 uninstall: stop
-	rm -f $(AGENT)
+	rm -f $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
 	rm -rf "$(INSTALL_DIR)/LetterSwitch.app"
 
 test:
@@ -61,7 +55,8 @@ release: test
 	ditto -c -k --norsrc --keepParent $(APP) build/LetterSwitch.zip
 	GH_TOKEN=$$(gh auth token --user santiagohervella) gh release create v$(VERSION) \
 		--repo santiagohervella/letter-switch --title "v$(VERSION)" --generate-notes \
-		build/LetterSwitch.zip LaunchAgent.plist
+		build/LetterSwitch.zip
+	scripts/update-cask.sh $(VERSION) build/LetterSwitch.zip
 
 logs:
 	log stream --level debug --predicate 'subsystem == "$(BUNDLE_ID)"'
