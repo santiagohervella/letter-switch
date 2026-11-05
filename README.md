@@ -16,9 +16,15 @@ The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" 
 
 ## Config
 
-`~/.config/letter-switch/config.toml` is reloaded whenever it changes. Pins give an app a key other than its first letter, and launch it when nothing on that key is running:
+`~/.config/letter-switch/config.toml` is reloaded whenever it changes.
+
+`modifier` is the key held while pressing a letter: `right_option` (the default), `left_option`, `right_command`, `left_command`, `right_control` or `left_control`. Only that exact modifier counts, so holding any other modifier alongside it leaves the keystroke alone.
+
+Pins give an app a key other than its first letter, and launch it when nothing on that key is running:
 
 ```toml
+modifier = "right_option"
+
 [pins]
 i = "com.mitchellh.ghostty"
 o = "md.obsidian"

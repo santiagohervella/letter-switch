@@ -5,14 +5,17 @@ struct Config: Decodable {
     static let directory = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/letter-switch")
     static let file = directory.appending(path: "config.toml")
 
+    let modifier: Modifier
     let pins: [String: String]
 
-    init(pins: [String: String] = [:]) {
+    init(modifier: Modifier = .rightOption, pins: [String: String] = [:]) {
+        self.modifier = modifier
         self.pins = pins
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        modifier = try container.decodeIfPresent(Modifier.self, forKey: .modifier) ?? .rightOption
         pins = try container.decodeIfPresent([String: String].self, forKey: .pins) ?? [:]
     }
 
@@ -30,6 +33,7 @@ struct Config: Decodable {
     }
 
     private enum CodingKeys: String, CodingKey {
+        case modifier
         case pins
     }
 }

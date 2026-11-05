@@ -1,14 +1,18 @@
 import AppKit
 import Carbon.HIToolbox
+import os
 
 final class KeyTap {
-    private static let rightOptionMask: UInt64 = 0x40
-    private static let leftOptionMask: UInt64 = 0x20
-
     private let onKey: (Character) -> Void
+    private let currentModifier = OSAllocatedUnfairLock(initialState: Modifier.rightOption)
     private let characters = KeyLayout.characters()
     private var tap: CFMachPort?
     private var swallowedKeyCodes = Set<Int64>()
+
+    var modifier: Modifier {
+        get { currentModifier.withLock { $0 } }
+        set { currentModifier.withLock { $0 = newValue } }
+    }
 
     init(onKey: @escaping (Character) -> Void) {
         self.onKey = onKey
@@ -51,7 +55,7 @@ final class KeyTap {
             return swallowedKeyCodes.remove(keyCode) == nil ? Unmanaged.passUnretained(event) : nil
         }
 
-        guard isRightOptionOnly(event.flags), let character = characters[keyCode] else {
+        guard modifier.matches(event.flags), let character = characters[keyCode] else {
             return Unmanaged.passUnretained(event)
         }
 
@@ -60,12 +64,6 @@ final class KeyTap {
             DispatchQueue.main.async { self.onKey(character) }
         }
         return nil
-    }
-
-    private func isRightOptionOnly(_ flags: CGEventFlags) -> Bool {
-        flags.rawValue & Self.rightOptionMask != 0
-            && flags.rawValue & Self.leftOptionMask == 0
-            && flags.isDisjoint(with: [.maskCommand, .maskControl, .maskShift])
     }
 }
 
