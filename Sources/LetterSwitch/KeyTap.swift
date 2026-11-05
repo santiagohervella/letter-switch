@@ -2,10 +2,10 @@ import AppKit
 import Carbon.HIToolbox
 import os
 
-final class KeyTap {
+final class KeyTap: NSObject {
     private let onKey: (Character) -> Void
     private let currentModifier = OSAllocatedUnfairLock(initialState: Modifier.rightOption)
-    private let characters = KeyLayout.characters()
+    private let characters = OSAllocatedUnfairLock(initialState: KeyLayout.characters())
     private var tap: CFMachPort?
     private var swallowedKeyCodes = Set<Int64>()
 
@@ -16,6 +16,20 @@ final class KeyTap {
 
     init(onKey: @escaping (Character) -> Void) {
         self.onKey = onKey
+        super.init()
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(reloadLayout),
+            name: Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
+            object: nil,
+            suspensionBehavior: .deliverImmediately
+        )
+    }
+
+    @objc private func reloadLayout() {
+        let layout = KeyLayout.characters()
+        characters.withLock { $0 = layout }
+        log.info("keyboard layout changed, \(layout.count) keys mapped")
     }
 
     func start() -> Bool {
@@ -55,7 +69,7 @@ final class KeyTap {
             return swallowedKeyCodes.remove(keyCode) == nil ? Unmanaged.passUnretained(event) : nil
         }
 
-        guard modifier.matches(event.flags), let character = characters[keyCode] else {
+        guard modifier.matches(event.flags), let character = characters.withLock({ $0[keyCode] }) else {
             return Unmanaged.passUnretained(event)
         }
 
