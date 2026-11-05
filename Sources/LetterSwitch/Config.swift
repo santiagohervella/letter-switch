@@ -7,11 +7,13 @@ struct Config: Decodable {
 
     let modifier: Modifier
     let showNoAppsMessage: Bool
+    let hideOtherApps: Bool
     let apps: [String: AppSettings]
 
-    init(modifier: Modifier = .rightOption, showNoAppsMessage: Bool = false, apps: [String: AppSettings] = [:]) {
+    init(modifier: Modifier = .rightOption, showNoAppsMessage: Bool = false, hideOtherApps: Bool = false, apps: [String: AppSettings] = [:]) {
         self.modifier = modifier
         self.showNoAppsMessage = showNoAppsMessage
+        self.hideOtherApps = hideOtherApps
         self.apps = apps
     }
 
@@ -20,6 +22,7 @@ struct Config: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         modifier = try container.decodeIfPresent(Modifier.self, forKey: .modifier) ?? .rightOption
         showNoAppsMessage = try container.decodeIfPresent(Bool.self, forKey: .showNoAppsMessage) ?? false
+        hideOtherApps = try container.decodeIfPresent(Bool.self, forKey: .hideOtherApps) ?? false
         apps = try container.decodeIfPresent([String: AppSettings].self, forKey: .apps) ?? [:]
     }
 
@@ -49,6 +52,7 @@ struct Config: Decodable {
     private enum CodingKeys: String, CodingKey, CaseIterable {
         case modifier
         case showNoAppsMessage = "show_no_apps_message"
+        case hideOtherApps = "hide_other_apps"
         case apps
     }
 }

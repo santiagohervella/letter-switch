@@ -13,6 +13,7 @@ final class Switcher {
     private let hud = HUD()
     private var assignments = KeyAssignments()
     private var showNoAppsMessage = false
+    private var hideOtherApps = false
     private var cycle: Cycle?
 
     init(tracker: AppTracker) {
@@ -22,6 +23,7 @@ final class Switcher {
     func apply(_ config: Config) {
         assignments = KeyAssignments(apps: config.apps)
         showNoAppsMessage = config.showNoAppsMessage
+        hideOtherApps = config.hideOtherApps
         cycle = nil
         log.info("applied config with \(config.apps.count) apps")
     }
@@ -43,6 +45,7 @@ final class Switcher {
         cycle = Cycle(key: key, apps: apps, target: target)
         tracker.moveToFront(target)
         focuser.focus(target)
+        hideApps(except: target)
     }
 
     private func launchApp(_ key: Character) {
@@ -54,7 +57,14 @@ final class Switcher {
             return
         }
         cycle = nil
-        launcher.launch(bundleID)
+        launcher.launch(bundleID) { [weak self] app in self?.hideApps(except: app) }
+    }
+
+    private func hideApps(except target: NSRunningApplication) {
+        guard hideOtherApps else { return }
+        tracker.recent
+            .filter { $0.processIdentifier != target.processIdentifier && !$0.isHidden }
+            .forEach { $0.hide() }
     }
 
     private func continuedCycle(_ key: Character, _ current: NSRunningApplication?) -> Cycle? {

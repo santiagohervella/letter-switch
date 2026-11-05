@@ -22,6 +22,8 @@ The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" 
 
 `show_no_apps_message: true` flashes a message in the middle of the screen with your focused window when nothing answers to a key. It's off by default.
 
+`hide_other_apps: true` hides every other app whenever you switch to or launch one, so only one app is visible at a time. It's off by default.
+
 Every running app answers to the first letter of its name. An entry under `apps`, keyed by bundle ID, changes that per app:
 
 ```yaml
