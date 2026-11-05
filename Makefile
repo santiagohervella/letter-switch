@@ -9,7 +9,7 @@ INSTALL_DIR := $(HOME)/Applications
 AGENT := $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
 GUI_DOMAIN := gui/$(shell id -u)
 
-.PHONY: app run install uninstall stop identity icon test logs clean
+.PHONY: app run install uninstall stop identity icon test release logs clean
 
 app: identity
 	swift build -c release
@@ -54,6 +54,14 @@ uninstall: stop
 
 test:
 	swift test
+
+release: test
+	@test "$(VERSION)" != dev || { echo "usage: make release VERSION=x.y"; exit 1; }
+	$(MAKE) app VERSION=$(VERSION)
+	ditto -c -k --norsrc --keepParent $(APP) build/LetterSwitch.zip
+	GH_TOKEN=$$(gh auth token --user santiagohervella) gh release create v$(VERSION) \
+		--repo santiagohervella/letter-switch --title "v$(VERSION)" --generate-notes \
+		build/LetterSwitch.zip LaunchAgent.plist
 
 logs:
 	log stream --level debug --predicate 'subsystem == "$(BUNDLE_ID)"'
