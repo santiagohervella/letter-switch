@@ -8,7 +8,8 @@ let package = Package(
         .executableTarget(
             name: "LetterSwitch",
             path: "Sources/LetterSwitch",
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [.unsafeFlags(["-F/System/Library/PrivateFrameworks", "-framework", "SkyLight"])]
         ),
     ]
 )
