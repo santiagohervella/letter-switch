@@ -3,6 +3,7 @@ import AppKit
 let tracker = AppTracker()
 let switcher = Switcher(tracker: tracker)
 let keyTap = KeyTap { switcher.switchTo($0) }
+let configWatcher = ConfigWatcher { Config.load().map(switcher.apply) }
 
 func startKeyTapWhenTrusted() {
     guard AXIsProcessTrusted(), keyTap.start() else {
@@ -12,6 +13,8 @@ func startKeyTapWhenTrusted() {
     log.info("key tap started")
 }
 
+Config.load().map(switcher.apply)
+configWatcher.start()
 tracker.start()
 AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
 startKeyTapWhenTrusted()
