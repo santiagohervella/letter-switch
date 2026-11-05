@@ -20,14 +20,18 @@ The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" 
 
 `modifier` is the key held while pressing a letter: `right_option` (the default), `left_option`, `right_command`, `left_command`, `right_control` or `left_control`. Only that exact modifier counts, so holding any other modifier alongside it leaves the keystroke alone.
 
-Pins give an app a key other than its first letter, and launch it when nothing on that key is running:
+Every running app answers to the first letter of its name. `[apps]` changes that per app, keyed by bundle ID:
 
 ```toml
 modifier = "right_option"
 
-[pins]
-i = "com.mitchellh.ghostty"
-o = "md.obsidian"
+[apps]
+"com.mitchellh.ghostty" = { keys = ["g", "i"] }
+"md.obsidian" = { launch = true }
 ```
+
+- `keys` is the full list of keys the app answers to, replacing its first letter. List the first letter too to keep it.
+- `launch = true` launches the app from any of its keys when nothing on that key is running. Two apps launching from the same key cancel each other out, and the log says so.
+- Unknown settings and invalid keys make the whole file invalid, and the previous config stays in place.
 
 Find an app's bundle ID with `osascript -e 'id of app "Ghostty"'`.

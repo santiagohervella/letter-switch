@@ -18,18 +18,18 @@ final class Switcher {
     }
 
     func apply(_ config: Config) {
-        assignments = KeyAssignments(pins: config.pins)
+        assignments = KeyAssignments(apps: config.apps)
         cycle = nil
-        log.info("applied config with \(self.assignments.count) pins")
+        log.info("applied config with \(config.apps.count) apps")
     }
 
     func switchTo(_ key: Character) {
         let current = tracker.recent.first
-        let apps = (continuedCycle(key, current)?.apps ?? tracker.recent.filter { assignments.key(for: $0) == key })
+        let apps = (continuedCycle(key, current)?.apps ?? tracker.recent.filter { assignments.keys(for: $0).contains(key) })
             .filter { !$0.isTerminated }
 
         guard !apps.isEmpty else {
-            launchPinnedApp(key)
+            launchApp(key)
             return
         }
 
@@ -42,8 +42,8 @@ final class Switcher {
         focuser.focus(target)
     }
 
-    private func launchPinnedApp(_ key: Character) {
-        guard let bundleID = assignments.pinnedBundleID(for: key) else {
+    private func launchApp(_ key: Character) {
+        guard let bundleID = assignments.launchBundleID(for: key) else {
             log.debug("no apps for \(String(key), privacy: .public)")
             return
         }

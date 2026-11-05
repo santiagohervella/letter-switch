@@ -6,17 +6,18 @@ struct Config: Decodable {
     static let file = directory.appending(path: "config.toml")
 
     let modifier: Modifier
-    let pins: [String: String]
+    let apps: [String: AppSettings]
 
-    init(modifier: Modifier = .rightOption, pins: [String: String] = [:]) {
+    init(modifier: Modifier = .rightOption, apps: [String: AppSettings] = [:]) {
         self.modifier = modifier
-        self.pins = pins
+        self.apps = apps
     }
 
     init(from decoder: Decoder) throws {
+        try decoder.rejectUnknownKeys(allowed: CodingKeys.allCases.map(\.rawValue))
         let container = try decoder.container(keyedBy: CodingKeys.self)
         modifier = try container.decodeIfPresent(Modifier.self, forKey: .modifier) ?? .rightOption
-        pins = try container.decodeIfPresent([String: String].self, forKey: .pins) ?? [:]
+        apps = try container.decodeIfPresent([String: AppSettings].self, forKey: .apps) ?? [:]
     }
 
     static func load() -> Config? {
@@ -32,9 +33,69 @@ struct Config: Decodable {
         }
     }
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case modifier
-        case pins
+        case apps
+    }
+}
+
+struct AppSettings: Decodable {
+    let keys: Set<Character>?
+    let launch: Bool
+
+    init(from decoder: Decoder) throws {
+        try decoder.rejectUnknownKeys(allowed: CodingKeys.allCases.map(\.rawValue))
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        keys = try container.decodeIfPresent([String].self, forKey: .keys).map { values in
+            Set(try values.map { try Self.switchKey($0, decoder) })
+        }
+        launch = try container.decodeIfPresent(Bool.self, forKey: .launch) ?? false
+    }
+
+    private static func switchKey(_ value: String, _ decoder: Decoder) throws -> Character {
+        guard value.count == 1, let key = value.lowercased().first, SwitchKey.isValid(key) else {
+            throw ConfigError(decoder, "key \"\(value)\" must be a single letter or digit")
+        }
+        return key
+    }
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case keys
+        case launch
+    }
+}
+
+struct ConfigError: Error, CustomStringConvertible {
+    let description: String
+
+    init(_ decoder: Decoder, _ message: String) {
+        let path = decoder.codingPath.map(\.stringValue).joined(separator: ".")
+        description = path.isEmpty ? message : "\(path): \(message)"
+    }
+}
+
+private struct AnyCodingKey: CodingKey {
+    let stringValue: String
+    let intValue: Int? = nil
+
+    init(stringValue: String) {
+        self.stringValue = stringValue
+    }
+
+    init?(intValue: Int) {
+        nil
+    }
+}
+
+private extension Decoder {
+    func rejectUnknownKeys(allowed: [String]) throws {
+        let unknown = try container(keyedBy: AnyCodingKey.self).allKeys
+            .map(\.stringValue)
+            .filter { !allowed.contains($0) }
+            .sorted()
+        guard unknown.isEmpty else {
+            throw ConfigError(self, "unknown setting \(unknown.joined(separator: ", "))")
+        }
     }
 }
 

@@ -1,37 +1,60 @@
 import AppKit
 
 struct KeyAssignments {
-    private let bundleIDByKey: [Character: String]
-    private let keyByBundleID: [String: Character]
+    private let keysByBundleID: [String: Set<Character>]
+    private let launchBundleIDByKey: [Character: String]
 
-    var count: Int {
-        bundleIDByKey.count
-    }
+    init(apps: [String: AppSettings] = [:]) {
+        keysByBundleID = apps.compactMapValues(\.keys)
 
-    init(pins: [String: String] = [:]) {
-        bundleIDByKey = pins.reduce(into: [:]) { pinned, pin in
-            guard pin.key.count == 1, let key = pin.key.lowercased().first, Self.isSwitchKey(key) else {
-                log.error("ignoring pin \(pin.key, privacy: .public): key must be a single letter or digit")
-                return
+        let launchCandidates = apps
+            .filter(\.value.launch)
+            .flatMap { bundleID, settings in
+                (settings.keys ?? Self.installedFirstLetter(bundleID)).map { (key: $0, bundleID: bundleID) }
             }
-            pinned[key] = pin.value
+
+        launchBundleIDByKey = Dictionary(grouping: launchCandidates, by: \.key).compactMapValues { candidates in
+            guard candidates.count == 1 else {
+                let bundleIDs = candidates.map(\.bundleID).sorted().joined(separator: ", ")
+                log.error("not launching on \(String(candidates[0].key), privacy: .public): \(bundleIDs, privacy: .public) all launch on it")
+                return nil
+            }
+            return candidates[0].bundleID
         }
-        keyByBundleID = Dictionary(bundleIDByKey.map { ($1, $0) }) { first, _ in first }
     }
 
-    func key(for app: NSRunningApplication) -> Character? {
-        if let bundleID = app.bundleIdentifier, let key = keyByBundleID[bundleID] {
-            return key
+    func keys(for app: NSRunningApplication) -> Set<Character> {
+        if let bundleID = app.bundleIdentifier, let keys = keysByBundleID[bundleID] {
+            return keys
         }
-        guard let first = app.localizedName?.lowercased().first, Self.isSwitchKey(first) else { return nil }
-        return first
+        return SwitchKey.firstLetter(of: app.localizedName).map { [$0] } ?? []
     }
 
-    func pinnedBundleID(for key: Character) -> String? {
-        bundleIDByKey[key]
+    func launchBundleID(for key: Character) -> String? {
+        launchBundleIDByKey[key]
     }
 
-    private static func isSwitchKey(_ character: Character) -> Bool {
+    private static func installedFirstLetter(_ bundleID: String) -> Set<Character> {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
+            log.error("not launching \(bundleID, privacy: .public): app not installed")
+            return []
+        }
+        let bundle = Bundle(url: url)
+        let name = ["CFBundleDisplayName", "CFBundleName"]
+            .lazy
+            .compactMap { bundle?.object(forInfoDictionaryKey: $0) as? String }
+            .first ?? url.deletingPathExtension().lastPathComponent
+        return SwitchKey.firstLetter(of: name).map { [$0] } ?? []
+    }
+}
+
+enum SwitchKey {
+    static func isValid(_ character: Character) -> Bool {
         character.isASCII && (character.isLetter || character.isNumber)
+    }
+
+    static func firstLetter(of name: String?) -> Character? {
+        guard let first = name?.lowercased().first, isValid(first) else { return nil }
+        return first
     }
 }
