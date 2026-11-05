@@ -8,6 +8,7 @@ make run         # build, sign and launch from build/, replacing the installed c
 make stop        # stop whichever copy is running
 make uninstall   # remove the app and its launch agent
 make logs        # stream the app's logs
+make icon        # redraw AppIcon.icns from scripts/make-icon.swift
 ```
 
 The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" certificate. `scripts/signing-identity.sh` creates it in the login keychain on the first build. The signature has to stay the same across builds so that the Accessibility permission survives rebuilds.

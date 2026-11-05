@@ -9,15 +9,26 @@ INSTALL_DIR := $(HOME)/Applications
 AGENT := $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
 GUI_DOMAIN := gui/$(shell id -u)
 
-.PHONY: app run install uninstall stop identity logs clean
+.PHONY: app run install uninstall stop identity icon logs clean
 
 app: identity
 	swift build -c release
-	mkdir -p $(APP)/Contents/MacOS
+	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp .build/release/LetterSwitch $(APP)/Contents/MacOS/
+	cp AppIcon.icns $(APP)/Contents/Resources/
 	cp Info.plist $(APP)/Contents/
 	plutil -replace CFBundleShortVersionString -string "$(VERSION)" $(APP)/Contents/Info.plist
 	codesign --force --sign "$(IDENTITY)" --identifier $(BUNDLE_ID) $(APP)
+
+icon:
+	rm -rf build/AppIcon.iconset
+	mkdir -p build/AppIcon.iconset
+	swift scripts/make-icon.swift build/icon.png
+	for size in 16 32 128 256 512; do \
+		sips -z $$size $$size build/icon.png --out build/AppIcon.iconset/icon_$${size}x$${size}.png >/dev/null; \
+		sips -z $$((size * 2)) $$((size * 2)) build/icon.png --out build/AppIcon.iconset/icon_$${size}x$${size}@2x.png >/dev/null; \
+	done
+	iconutil -c icns build/AppIcon.iconset -o AppIcon.icns
 
 identity:
 	@security find-certificate -c "$(IDENTITY)" >/dev/null 2>&1 || scripts/signing-identity.sh
