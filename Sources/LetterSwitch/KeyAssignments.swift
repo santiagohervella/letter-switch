@@ -4,10 +4,17 @@ struct KeyAssignments {
     private let keysByBundleID: [String: Set<Character>]
     private let launchBundleIDByKey: [Character: String]
 
-    init(apps: [String: AppSettings] = [:]) {
-        keysByBundleID = apps.compactMapValues(\.keys)
+    private static let applicationDirectories = [
+        "/Applications",
+        "/System/Applications",
+        FileManager.default.homeDirectoryForCurrentUser.appending(path: "Applications").path,
+    ].map { URL(filePath: $0) }
 
-        let launchCandidates = apps
+    init(apps: [String: AppSettings] = [:]) {
+        let appsByBundleID = Dictionary(apps.map { (Self.bundleID(for: $0.key), $0.value) }) { first, _ in first }
+        keysByBundleID = appsByBundleID.compactMapValues(\.keys)
+
+        let launchCandidates = appsByBundleID
             .filter(\.value.launch)
             .flatMap { bundleID, settings in
                 (settings.keys ?? Self.installedFirstLetter(bundleID)).map { (key: $0, bundleID: bundleID) }
@@ -32,6 +39,30 @@ struct KeyAssignments {
 
     func launchBundleID(for key: Character) -> String? {
         launchBundleIDByKey[key]
+    }
+
+    private static func bundleID(for app: String) -> String {
+        if NSWorkspace.shared.urlForApplication(withBundleIdentifier: app) != nil {
+            return app
+        }
+        guard let bundleID = installedApps()
+            .first(where: { $0.deletingPathExtension().lastPathComponent.caseInsensitiveCompare(app) == .orderedSame })
+            .flatMap({ Bundle(url: $0)?.bundleIdentifier })
+        else {
+            log.error("no app named \(app, privacy: .public) and no app with that bundle ID")
+            return app
+        }
+        return bundleID
+    }
+
+    private static func installedApps() -> [URL] {
+        applicationDirectories.flatMap { directory in
+            contents(of: directory).flatMap { $0.pathExtension == "app" ? [$0] : contents(of: $0).filter { $0.pathExtension == "app" } }
+        }
+    }
+
+    private static func contents(of directory: URL) -> [URL] {
+        (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
     }
 
     private static func installedFirstLetter(_ bundleID: String) -> Set<Character> {

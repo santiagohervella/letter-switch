@@ -24,17 +24,17 @@ The build uses Xcode 26.3's toolchain and signs with a local "LetterSwitch Dev" 
 
 `hide_other_apps: true` hides every other app whenever you switch to or launch one, so only one app is visible at a time. It's off by default.
 
-Every running app answers to the first letter of its name. An entry under `apps`, keyed by bundle ID, changes that per app:
+Every running app answers to the first letter of its name. An entry under `apps`, keyed by app name, changes that per app:
 
 ```yaml
 modifier: right_option
 show_no_apps_message: true
 
 apps:
-  com.mitchellh.ghostty:
+  Ghostty:
     keys: [g, i]
 
-  md.obsidian:
+  Obsidian:
     launch: true
 ```
 
@@ -42,4 +42,4 @@ apps:
 - `launch: true` launches the app from any of its keys when nothing on that key is running. Two apps launching from the same key cancel each other out, and the log says so.
 - Unknown settings and invalid keys make the whole file invalid, and the previous config stays in place.
 
-Find an app's bundle ID with `osascript -e 'id of app "Ghostty"'`.
+An app's name is its `.app` file name in `/Applications`, `/System/Applications`, `~/Applications` or a folder inside one of those, so Zoom is `zoom.us`. A bundle ID works too, for when two apps share a name. Find one with `osascript -e 'id of app "Ghostty"'`.
