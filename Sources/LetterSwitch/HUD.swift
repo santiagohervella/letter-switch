@@ -44,6 +44,11 @@ final class HUD {
         panel.contentView = background
     }
 
+    func flash(_ message: String) {
+        show(message)
+        dismiss()
+    }
+
     func show(_ message: String) {
         pendingFade?.cancel()
         label.stringValue = message
@@ -59,7 +64,10 @@ final class HUD {
         )
         panel.alphaValue = 1
         panel.orderFrontRegardless()
+    }
 
+    func dismiss() {
+        pendingFade?.cancel()
         let fade = DispatchWorkItem { [weak self] in self?.fadeOut() }
         pendingFade = fade
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.visibleDuration, execute: fade)

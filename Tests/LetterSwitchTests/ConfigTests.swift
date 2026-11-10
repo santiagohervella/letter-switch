@@ -14,7 +14,7 @@ struct ConfigTests {
     @Test func emptyFileUsesDefaults() throws {
         let config = try Config.parse("\n  \n")
         #expect(config.modifier == .rightOption)
-        #expect(!config.showNoAppsMessage)
+        #expect(!config.showHUD)
         #expect(!config.hideOtherApps)
         #expect(config.apps.isEmpty)
     }
@@ -22,7 +22,7 @@ struct ConfigTests {
     @Test func parsesEverySetting() throws {
         let config = try Config.parse("""
             modifier: left_command
-            show_no_apps_message: true
+            show_hud: true
             hide_other_apps: true
 
             apps:
@@ -33,7 +33,7 @@ struct ConfigTests {
                 launch: true
             """)
         #expect(config.modifier == .leftCommand)
-        #expect(config.showNoAppsMessage)
+        #expect(config.showHUD)
         #expect(config.hideOtherApps)
         #expect(config.apps["Ghostty"]?.keys == ["g", "i"])
         #expect(config.apps["Ghostty"]?.launch == true)

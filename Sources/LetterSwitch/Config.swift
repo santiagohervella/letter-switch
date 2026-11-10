@@ -6,13 +6,13 @@ struct Config: Decodable {
     static let file = directory.appending(path: "config.yaml")
 
     let modifier: Modifier
-    let showNoAppsMessage: Bool
+    let showHUD: Bool
     let hideOtherApps: Bool
     let apps: [String: AppSettings]
 
-    init(modifier: Modifier = .rightOption, showNoAppsMessage: Bool = false, hideOtherApps: Bool = false, apps: [String: AppSettings] = [:]) {
+    init(modifier: Modifier = .rightOption, showHUD: Bool = false, hideOtherApps: Bool = false, apps: [String: AppSettings] = [:]) {
         self.modifier = modifier
-        self.showNoAppsMessage = showNoAppsMessage
+        self.showHUD = showHUD
         self.hideOtherApps = hideOtherApps
         self.apps = apps
     }
@@ -21,7 +21,7 @@ struct Config: Decodable {
         try decoder.rejectUnknownKeys(allowed: CodingKeys.allCases.map(\.rawValue))
         let container = try decoder.container(keyedBy: CodingKeys.self)
         modifier = try container.decodeIfPresent(Modifier.self, forKey: .modifier) ?? .rightOption
-        showNoAppsMessage = try container.decodeIfPresent(Bool.self, forKey: .showNoAppsMessage) ?? false
+        showHUD = try container.decodeIfPresent(Bool.self, forKey: .showHUD) ?? false
         hideOtherApps = try container.decodeIfPresent(Bool.self, forKey: .hideOtherApps) ?? false
         apps = try container.decodeIfPresent([String: AppSettings].self, forKey: .apps) ?? [:]
     }
@@ -55,7 +55,7 @@ struct Config: Decodable {
 
     private enum CodingKeys: String, CodingKey, CaseIterable {
         case modifier
-        case showNoAppsMessage = "show_no_apps_message"
+        case showHUD = "show_hud"
         case hideOtherApps = "hide_other_apps"
         case apps
     }

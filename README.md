@@ -34,7 +34,7 @@ The app is self-signed rather than notarized, so the Homebrew cask clears the qu
 
 `modifier` is the key held while pressing a letter: `right_option` (the default), `left_option`, `right_command`, `left_command`, `right_control` or `left_control`. Only that exact modifier counts, so holding any other modifier alongside it leaves the keystroke alone.
 
-`show_no_apps_message: true` flashes a message in the middle of the screen with your focused window when nothing answers to a key. It's off by default.
+`show_hud: true` shows a message in the middle of the screen with your focused window when nothing answers to a key, and while an app is launching. It's off by default.
 
 `hide_other_apps: true` hides every other app whenever you switch to or launch one, so only one app is visible at a time. It's off by default.
 
@@ -42,7 +42,7 @@ Every running app answers to the first letter of its name. An entry under `apps`
 
 ```yaml
 modifier: right_option
-show_no_apps_message: true
+show_hud: true
 
 apps:
   Ghostty:

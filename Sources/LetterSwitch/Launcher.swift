@@ -3,13 +3,18 @@ import AppKit
 final class Launcher {
     private var launching = Set<String>()
 
-    func launch(_ bundleID: String, onLaunch: @escaping (NSRunningApplication) -> Void) {
-        guard !launching.contains(bundleID) else {
-            log.debug("already launching \(bundleID, privacy: .public)")
-            return
-        }
+    func launch(
+        _ bundleID: String,
+        onStart: @escaping (String) -> Void,
+        onFinish: @escaping (NSRunningApplication?) -> Void
+    ) {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
             log.error("no app installed for pinned \(bundleID, privacy: .public)")
+            return
+        }
+        onStart(url.deletingPathExtension().lastPathComponent)
+        guard !launching.contains(bundleID) else {
+            log.debug("already launching \(bundleID, privacy: .public)")
             return
         }
 
@@ -18,9 +23,7 @@ final class Launcher {
         NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { [weak self] app, error in
             DispatchQueue.main.async {
                 self?.launching.remove(bundleID)
-                if let app {
-                    onLaunch(app)
-                }
+                onFinish(app)
                 if let error {
                     log.error("failed to launch \(bundleID, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 }

@@ -6,7 +6,7 @@ final class Switcher {
     private let launcher = Launcher()
     private let hud = HUD()
     private var assignments = KeyAssignments()
-    private var showNoAppsMessage = false
+    private var showHUD = false
     private var hideOtherApps = false
     private var cycle: Cycle<NSRunningApplication>?
 
@@ -16,7 +16,7 @@ final class Switcher {
 
     func apply(_ config: Config) {
         assignments = KeyAssignments(apps: config.apps)
-        showNoAppsMessage = config.showNoAppsMessage
+        showHUD = config.showHUD
         hideOtherApps = config.hideOtherApps
         cycle = nil
         log.info("applied config with \(config.apps.count) apps")
@@ -39,13 +39,24 @@ final class Switcher {
     private func launchApp(_ key: Character) {
         guard let bundleID = assignments.launchBundleID(for: key) else {
             log.debug("no apps for \(String(key), privacy: .public)")
-            if showNoAppsMessage {
-                hud.show("No apps for '\(key.uppercased())'")
+            if showHUD {
+                hud.flash("No apps for '\(key.uppercased())'")
             }
             return
         }
         cycle = nil
-        launcher.launch(bundleID) { [weak self] app in self?.hideApps(except: app) }
+        launcher.launch(bundleID) { [weak self] name in
+            guard let self, self.showHUD else { return }
+            self.hud.show("Launching \(name)…")
+        } onFinish: { [weak self] app in
+            guard let self else { return }
+            if self.showHUD {
+                self.hud.dismiss()
+            }
+            if let app {
+                self.hideApps(except: app)
+            }
+        }
     }
 
     private func hideApps(except target: NSRunningApplication) {
