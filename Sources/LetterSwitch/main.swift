@@ -7,11 +7,12 @@ guard LoginItem.isRunningAsAgent else {
 
 let tracker = AppTracker()
 let switcher = Switcher(tracker: tracker)
-let keyTap = KeyTap { switcher.switchTo($0) }
+let keyTap = KeyTap(onKey: { switcher.switchTo($0) }, onHide: { switcher.hideFrontmost() })
 let configWatcher = ConfigWatcher { Config.load().map(apply) }
 
 func apply(_ config: Config) {
     keyTap.modifier = config.modifier
+    keyTap.interceptsHide = config.hideOtherApps
     switcher.apply(config)
     log.info("modifier is \(config.modifier.rawValue, privacy: .public)")
 }

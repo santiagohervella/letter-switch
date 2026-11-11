@@ -36,6 +36,20 @@ final class Switcher {
         hideApps(except: target)
     }
 
+    func hideFrontmost() {
+        guard let current = NSWorkspace.shared.frontmostApplication else { return }
+        guard let previous = tracker.recent.first(where: { $0.processIdentifier != current.processIdentifier }) else {
+            current.hide()
+            return
+        }
+
+        log.info("hiding \(current.localizedName ?? "?", privacy: .public) -> \(previous.localizedName ?? "?", privacy: .public)")
+        cycle = nil
+        tracker.moveToFront(previous)
+        focuser.focus(previous)
+        current.hide()
+    }
+
     private func launchApp(_ key: Character) {
         guard let bundleID = assignments.launchBundleID(for: key) else {
             log.debug("no apps for \(String(key), privacy: .public)")

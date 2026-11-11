@@ -4,7 +4,9 @@ import os
 
 final class KeyTap: NSObject {
     private let onKey: (Character) -> Void
+    private let onHide: () -> Void
     private let currentModifier = OSAllocatedUnfairLock(initialState: Modifier.rightOption)
+    private let hideInterception = OSAllocatedUnfairLock(initialState: false)
     private let characters = OSAllocatedUnfairLock(initialState: KeyLayout.characters())
     private var tap: CFMachPort?
     private var swallowedKeyCodes = Set<Int64>()
@@ -14,8 +16,14 @@ final class KeyTap: NSObject {
         set { currentModifier.withLock { $0 = newValue } }
     }
 
-    init(onKey: @escaping (Character) -> Void) {
+    var interceptsHide: Bool {
+        get { hideInterception.withLock { $0 } }
+        set { hideInterception.withLock { $0 = newValue } }
+    }
+
+    init(onKey: @escaping (Character) -> Void, onHide: @escaping () -> Void) {
         self.onKey = onKey
+        self.onHide = onHide
         super.init()
         DistributedNotificationCenter.default().addObserver(
             self,
@@ -69,15 +77,38 @@ final class KeyTap: NSObject {
             return swallowedKeyCodes.remove(keyCode) == nil ? Unmanaged.passUnretained(event) : nil
         }
 
-        guard modifier.matches(event.flags), let character = characters.withLock({ $0[keyCode] }) else {
+        let character = characters.withLock { $0[keyCode] }
+        let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+
+        if character == "h", isHideShortcut(event.flags), interceptsHide, Self.visibleAppCount() == 1 {
+            swallowedKeyCodes.insert(keyCode)
+            if !isRepeat {
+                DispatchQueue.main.async { self.onHide() }
+            }
+            return nil
+        }
+
+        guard modifier.matches(event.flags), let character else {
             return Unmanaged.passUnretained(event)
         }
 
         swallowedKeyCodes.insert(keyCode)
-        if event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+        if !isRepeat {
             DispatchQueue.main.async { self.onKey(character) }
         }
         return nil
+    }
+
+    private func isHideShortcut(_ flags: CGEventFlags) -> Bool {
+        flags.intersection([.maskAlternate, .maskCommand, .maskControl, .maskShift]) == .maskCommand
+    }
+
+    private static func visibleAppCount() -> Int {
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        return Set(windows
+            .filter { $0[kCGWindowLayer as String] as? Int == 0 }
+            .compactMap { $0[kCGWindowOwnerPID as String] as? pid_t }
+        ).count
     }
 }
 

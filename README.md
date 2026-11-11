@@ -36,7 +36,7 @@ The app is self-signed rather than notarized, so the Homebrew cask clears the qu
 
 `show_hud: true` shows a message in the middle of the screen with your focused window when nothing answers to a key, and while an app is launching. It's off by default.
 
-`hide_other_apps: true` hides every other app whenever you switch to or launch one, so only one app is visible at a time. It's off by default.
+`hide_other_apps: true` hides every other app whenever you switch to or launch one, so only one app is visible at a time. Hiding that app with ⌘H then brings back the app you used before it, like ⌘Tab. It's off by default.
 
 Every running app answers to the first letter of its name. An entry under `apps`, keyed by app name, changes that per app:
 
