@@ -45,6 +45,12 @@ final class Switcher {
         hideApps(except: target)
     }
 
+    func warnIfSecureInput() {
+        guard let owner = SecureInput.owner() else { return }
+        log.info("secure input is on, held by \(owner, privacy: .public)")
+        hud.flash("Secure Input is on in \(owner)")
+    }
+
     func hideFrontmost() {
         guard let current = NSWorkspace.shared.frontmostApplication else { return }
         guard !hidingPaused, let previous = tracker.recent.first(where: { $0.processIdentifier != current.processIdentifier }) else {

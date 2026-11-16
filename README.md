@@ -36,6 +36,8 @@ The app is self-signed rather than notarized, so the Homebrew cask clears the qu
 
 `show_hud: true` shows a message in the middle of the screen with your focused window when nothing answers to a key, and while an app is launching. It's off by default.
 
+When an app turns on Secure Input, usually while a password field has focus, macOS stops sending keystrokes to LetterSwitch. Pressing the modifier then shows a message naming that app, whatever `show_hud` is set to. Leave the password field or quit the app to switch again.
+
 `hide_other_apps: true` hides every other app whenever you switch to or launch one, so only one app is visible at a time. Hiding that app with ⌘H then brings back the app you used before it, like ⌘Tab. Double-tap the modifier and hold it on the second tap before pressing a letter to switch without hiding and pause hiding, so other apps stay on screen. Do it again to resume. It's off by default.
 
 Every running app answers to the first letter of its name. An entry under `apps`, keyed by app name, changes that per app:

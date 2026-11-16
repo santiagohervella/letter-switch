@@ -6,6 +6,7 @@ final class KeyTap: NSObject {
     private static let doubleTapInterval: TimeInterval = 0.3
 
     private let onKey: (Character, Bool) -> Void
+    private let onPress: () -> Void
     private let onHide: () -> Void
     private let currentModifier = OSAllocatedUnfairLock(initialState: Modifier.rightOption)
     private let hideInterception = OSAllocatedUnfairLock(initialState: false)
@@ -27,8 +28,9 @@ final class KeyTap: NSObject {
         set { hideInterception.withLock { $0 = newValue } }
     }
 
-    init(onKey: @escaping (Character, Bool) -> Void, onHide: @escaping () -> Void) {
+    init(onKey: @escaping (Character, Bool) -> Void, onPress: @escaping () -> Void, onHide: @escaping () -> Void) {
         self.onKey = onKey
+        self.onPress = onPress
         self.onHide = onHide
         super.init()
         DistributedNotificationCenter.default().addObserver(
@@ -123,6 +125,7 @@ final class KeyTap: NSObject {
             pressIsDoubleTap = lastTapAt.map { now - $0 < Self.doubleTapInterval } ?? false
             pressedAt = now
             lastTapAt = nil
+            DispatchQueue.main.async { self.onPress() }
         } else if !held, let pressedAt {
             lastTapAt = !pressWasUsed && now - pressedAt < Self.doubleTapInterval ? now : nil
             self.pressedAt = nil
