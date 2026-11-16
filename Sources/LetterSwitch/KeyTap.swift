@@ -3,13 +3,19 @@ import Carbon.HIToolbox
 import os
 
 final class KeyTap: NSObject {
-    private let onKey: (Character) -> Void
+    private static let doubleTapInterval: TimeInterval = 0.3
+
+    private let onKey: (Character, Bool) -> Void
     private let onHide: () -> Void
     private let currentModifier = OSAllocatedUnfairLock(initialState: Modifier.rightOption)
     private let hideInterception = OSAllocatedUnfairLock(initialState: false)
     private let characters = OSAllocatedUnfairLock(initialState: KeyLayout.characters())
     private var tap: CFMachPort?
     private var swallowedKeyCodes = Set<Int64>()
+    private var pressedAt: TimeInterval?
+    private var lastTapAt: TimeInterval?
+    private var pressIsDoubleTap = false
+    private var pressWasUsed = false
 
     var modifier: Modifier {
         get { currentModifier.withLock { $0 } }
@@ -21,7 +27,7 @@ final class KeyTap: NSObject {
         set { hideInterception.withLock { $0 = newValue } }
     }
 
-    init(onKey: @escaping (Character) -> Void, onHide: @escaping () -> Void) {
+    init(onKey: @escaping (Character, Bool) -> Void, onHide: @escaping () -> Void) {
         self.onKey = onKey
         self.onHide = onHide
         super.init()
@@ -41,7 +47,7 @@ final class KeyTap: NSObject {
     }
 
     func start() -> Bool {
-        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue | 1 << CGEventType.keyUp.rawValue)
+        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue | 1 << CGEventType.keyUp.rawValue | 1 << CGEventType.flagsChanged.rawValue)
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
@@ -71,11 +77,19 @@ final class KeyTap: NSObject {
             return Unmanaged.passUnretained(event)
         }
 
+        if type == .flagsChanged {
+            trackTaps(event.flags)
+            return Unmanaged.passUnretained(event)
+        }
+
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
 
         if type == .keyUp {
             return swallowedKeyCodes.remove(keyCode) == nil ? Unmanaged.passUnretained(event) : nil
         }
+
+        lastTapAt = nil
+        pressWasUsed = pressedAt != nil
 
         let character = characters.withLock { $0[keyCode] }
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
@@ -94,9 +108,27 @@ final class KeyTap: NSObject {
 
         swallowedKeyCodes.insert(keyCode)
         if !isRepeat {
-            DispatchQueue.main.async { self.onKey(character) }
+            let togglesHiding = pressIsDoubleTap
+            pressIsDoubleTap = false
+            DispatchQueue.main.async { self.onKey(character, togglesHiding) }
         }
         return nil
+    }
+
+    private func trackTaps(_ flags: CGEventFlags) {
+        let now = ProcessInfo.processInfo.systemUptime
+        let held = modifier.isHeld(flags)
+
+        if held, pressedAt == nil {
+            pressIsDoubleTap = lastTapAt.map { now - $0 < Self.doubleTapInterval } ?? false
+            pressedAt = now
+            lastTapAt = nil
+        } else if !held, let pressedAt {
+            lastTapAt = !pressWasUsed && now - pressedAt < Self.doubleTapInterval ? now : nil
+            self.pressedAt = nil
+            pressIsDoubleTap = false
+            pressWasUsed = false
+        }
     }
 
     private func isHideShortcut(_ flags: CGEventFlags) -> Bool {

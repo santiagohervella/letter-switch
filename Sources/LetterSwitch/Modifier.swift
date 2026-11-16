@@ -23,6 +23,10 @@ enum Modifier: String, Decodable {
             && flags.rawValue & oppositeDeviceMask == 0
     }
 
+    func isHeld(_ flags: CGEventFlags) -> Bool {
+        flags.rawValue & deviceMask != 0
+    }
+
     private var flag: CGEventFlags {
         switch self {
         case .rightOption, .leftOption: .maskAlternate

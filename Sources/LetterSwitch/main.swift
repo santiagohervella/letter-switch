@@ -7,7 +7,7 @@ guard LoginItem.isRunningAsAgent else {
 
 let tracker = AppTracker()
 let switcher = Switcher(tracker: tracker)
-let keyTap = KeyTap(onKey: { switcher.switchTo($0) }, onHide: { switcher.hideFrontmost() })
+let keyTap = KeyTap(onKey: { switcher.switchTo($0, togglesHiding: $1) }, onHide: { switcher.hideFrontmost() })
 let configWatcher = ConfigWatcher { Config.load().map(apply) }
 
 func apply(_ config: Config) {

@@ -8,6 +8,7 @@ final class Switcher {
     private var assignments = KeyAssignments()
     private var showHUD = false
     private var hideOtherApps = false
+    private var hidingPaused = false
     private var cycle: Cycle<NSRunningApplication>?
 
     init(tracker: AppTracker) {
@@ -22,7 +23,15 @@ final class Switcher {
         log.info("applied config with \(config.apps.count) apps")
     }
 
-    func switchTo(_ key: Character) {
+    func switchTo(_ key: Character, togglesHiding: Bool) {
+        if togglesHiding, hideOtherApps {
+            hidingPaused.toggle()
+            log.info("hiding \(self.hidingPaused ? "paused" : "resumed", privacy: .public)")
+            if showHUD {
+                hud.flash(hidingPaused ? "Hiding paused" : "Hiding resumed")
+            }
+        }
+
         guard let next = Cycle.next(key: key, recent: tracker.recent, previous: cycle, assignments: assignments) else {
             launchApp(key)
             return
@@ -38,7 +47,7 @@ final class Switcher {
 
     func hideFrontmost() {
         guard let current = NSWorkspace.shared.frontmostApplication else { return }
-        guard let previous = tracker.recent.first(where: { $0.processIdentifier != current.processIdentifier }) else {
+        guard !hidingPaused, let previous = tracker.recent.first(where: { $0.processIdentifier != current.processIdentifier }) else {
             current.hide()
             return
         }
@@ -74,7 +83,7 @@ final class Switcher {
     }
 
     private func hideApps(except target: NSRunningApplication) {
-        guard hideOtherApps else { return }
+        guard hideOtherApps, !hidingPaused else { return }
         tracker.recent
             .filter { $0.processIdentifier != target.processIdentifier && !$0.isHidden }
             .forEach { $0.hide() }
