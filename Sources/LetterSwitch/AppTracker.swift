@@ -5,7 +5,7 @@ final class AppTracker {
 
     private let workspace = NSWorkspace.shared
     private var runningObservation: NSKeyValueObservation?
-    private var policyObservations: [pid_t: NSKeyValueObservation] = [:]
+    private var policyObservations: [pid_t: PolicyObservation] = [:]
     private var activationObserver: NSObjectProtocol?
 
     func start() {
@@ -45,18 +45,27 @@ final class AppTracker {
 
     private func observePolicies(of running: [NSRunningApplication]) {
         let runningPIDs = Set(running.map(\.processIdentifier))
+        policyObservations.values
+            .filter { !runningPIDs.contains($0.app.processIdentifier) }
+            .forEach { $0.observation.invalidate() }
         policyObservations = policyObservations.filter { runningPIDs.contains($0.key) }
 
         running
             .filter { policyObservations[$0.processIdentifier] == nil }
             .forEach { app in
-                policyObservations[app.processIdentifier] = app.observe(\.activationPolicy) { [weak self] _, _ in
+                let observation = app.observe(\.activationPolicy) { [weak self] _, _ in
                     DispatchQueue.main.async { self?.sync() }
                 }
+                policyObservations[app.processIdentifier] = PolicyObservation(app: app, observation: observation)
             }
     }
 
     private func isSwitchable(_ app: NSRunningApplication) -> Bool {
         app.activationPolicy == .regular && !app.isTerminated && app.processIdentifier != getpid()
     }
+}
+
+private struct PolicyObservation {
+    let app: NSRunningApplication
+    let observation: NSKeyValueObservation
 }
