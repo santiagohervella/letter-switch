@@ -143,7 +143,9 @@ final class KeyTap: NSObject {
         return Set(windows
             .filter { $0[kCGWindowLayer as String] as? Int == 0 }
             .compactMap { $0[kCGWindowOwnerPID as String] as? pid_t }
-        ).count
+        )
+        .filter { NSRunningApplication(processIdentifier: $0)?.activationPolicy == .regular }
+        .count
     }
 }
 
